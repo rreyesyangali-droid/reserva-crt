@@ -15,37 +15,54 @@
   <style>
     body { font-family: Arial; background:#f4f4f4; }
     .container { max-width:1200px; margin:auto; background:#fff; padding:20px; border-radius:10px; }
+    h1 { text-align:center; }
+
     select, input, button { padding:10px; margin:5px; }
 
     .grid {
       display:grid;
-      grid-template-columns: 100px repeat(5, 1fr);
+      grid-template-columns: 120px repeat(5, 1fr);
       gap:5px;
       margin-top:20px;
     }
 
-    .header { font-weight:bold; text-align:center; }
-    .hora { background:#eee; text-align:center; padding:8px; }
+    .header { font-weight:bold; text-align:center; padding:10px; border-radius:5px; }
+
+    .lunes { background:#d4edda; }
+    .martes { background:#fff3cd; }
+    .miercoles { background:#e6d4f5; }
+    .jueves { background:#d1ecf1; }
+    .viernes { background:#f8d7da; }
+
+    .hora { background:#eee; text-align:center; padding:8px; border-radius:5px; }
 
     .celda {
-      background:#e3f2fd;
       min-height:50px;
       padding:5px;
       border-radius:5px;
       cursor:pointer;
+      font-weight:bold;
     }
 
+    .celda.lunes { color:#2e7d32; }
+    .celda.martes { color:#856404; }
+    .celda.miercoles { color:#6a1b9a; }
+    .celda.jueves { color:#0c5460; }
+    .celda.viernes { color:#721c24; }
+
     .ocupado {
-      background:#ff6b6b;
-      color:white;
+      background:#ff6b6b !important;
+      color:white !important;
     }
   </style>
 </head>
 <body>
 <div class="container">
-  <h2>📅 Horario Pedagógico</h2>
+  <h1>🏫 I.E. N°0162 "SAN JOSÉ OBRERO"</h1>
+  <h2 style="text-align:center;">Horario Pedagógico de Reservas</h2>
 
   <input type="text" id="nombre" placeholder="Nombre del docente">
+
   <select id="dia">
     <option>Lunes</option>
     <option>Martes</option>
@@ -60,7 +77,7 @@
 
   <div class="grid" id="tabla"></div>
 
-  <h3>🔐 Admin</h3>
+  <h3>🔐 Administrador</h3>
   <input type="password" id="claveAdmin" placeholder="Clave">
   <button onclick="modoAdmin()">Acceder</button>
 
@@ -94,9 +111,15 @@ const horas = [
   "12:00 - 12:45"
 ];
 
-const dias = ["Lunes","Martes","Miércoles","Jueves","Viernes"];
+const dias = [
+  {nombre:"Lunes", clase:"lunes"},
+  {nombre:"Martes", clase:"martes"},
+  {nombre:"Miércoles", clase:"miercoles"},
+  {nombre:"Jueves", clase:"jueves"},
+  {nombre:"Viernes", clase:"viernes"}
+];
 
-// llenar select
+// llenar select horas
 const horaSelect = document.getElementById("horaSelect");
 horas.forEach(h => {
   if(!h.includes("RECREO")){
@@ -112,14 +135,14 @@ function crearTabla(){
   tabla.innerHTML = "";
 
   tabla.innerHTML += "<div></div>";
-  dias.forEach(d => tabla.innerHTML += `<div class='header'>${d}</div>`);
+  dias.forEach(d => tabla.innerHTML += `<div class='header ${d.clase}'>${d.nombre}</div>`);
 
   horas.forEach(h => {
     tabla.innerHTML += `<div class='hora'>${h}</div>`;
 
     dias.forEach(d => {
-      const id = `${d}-${h}`;
-      tabla.innerHTML += `<div class='celda' id='${id}'></div>`;
+      const id = `${d.nombre}-${h}`;
+      tabla.innerHTML += `<div class='celda ${d.clase}' id='${id}'></div>`;
     });
   });
 }
