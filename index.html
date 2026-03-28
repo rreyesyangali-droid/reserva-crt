@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Reserva de Horario Docente</title>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <style>
+    body { font-family: Arial; background:#f4f4f4; }
+    .container { max-width:1100px; margin:auto; background:#fff; padding:20px; border-radius:10px; }
+    input, button { padding:10px; margin:5px; }
+
+    .grid {
+      display:grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap:10px;
+      margin-top:20px;
+    }
+
+    .dia {
+      background:#e3f2fd;
+      padding:10px;
+      border-radius:10px;
+    }
+
+    .dia h4 {
+      text-align:center;
+    }
+
+    .slot {
+      background:#eeeeee;
+      margin:5px 0;
+      padding:8px;
+      border-radius:5px;
+      cursor:pointer;
+    }
+
+    .reserved {
+      background:#ff6b6b;
+      color:#fff;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h2>Horario Semanal de Reservas</h2>
+
+  <input type="text" id="nombre" placeholder="Nombre del docente">
+  <input type="text" id="hora" placeholder="Hora (Ej: 10:00 - 11:00)">
+  <select id="dia">
+    <option>Lunes</option>
+    <option>Martes</option>
+    <option>Miércoles</option>
+    <option>Jueves</option>
+    <option>Viernes</option>
+  </select>
+  <button onclick="reservar()">Reservar</button>
+
+  <div class="grid">
+    <div class="dia" id="Lunes"><h4>Lunes</h4></div>
+    <div class="dia" id="Martes"><h4>Martes</h4></div>
+    <div class="dia" id="Miércoles"><h4>Miércoles</h4></div>
+    <div class="dia" id="Jueves"><h4>Jueves</h4></div>
+    <div class="dia" id="Viernes"><h4>Viernes</h4></div>
+  </div>
+
+  <h3>Administrador</h3>
+  <input type="password" id="claveAdmin" placeholder="Clave">
+  <button onclick="modoAdmin()">Acceder</button>
+
+  <h3>Estadísticas</h3>
+  <canvas id="grafico"></canvas>
+</div>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "TU_API_KEY",
+    authDomain: "TU_DOMINIO",
+    projectId: "TU_PROJECT_ID"
+  };
+
+  const app = firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  let admin = false;
+
+  function reservar(){
+    const nombre = document.getElementById("nombre").value;
+    const hora = document.getElementById("hora").value;
+    const dia = document.getElementById("dia").value;
+
+    db.collection("reservas").add({ nombre, hora, dia, fecha: new Date() })
+    .then(doc=>{
+      generarQR(nombre, hora, dia, doc.id);
+    });
+  }
+
+  function generarQR(nombre, hora, dia, id){
+    const texto = `Docente: ${nombre}\nDía: ${dia}\nHora: ${hora}\nID: ${id}`;
+
+    QRCode.toDataURL(texto, function(err, url){
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "boleta_QR.png";
+      link.click();
+    });
+  }
+
+  function cargar(){
+    db.collection("reservas").onSnapshot(snapshot=>{
+      const dias = ["Lunes","Martes","Miércoles","Jueves","Viernes"];
+
+      dias.forEach(d=>{
+        document.getElementById(d).innerHTML = `<h4>${d}</h4>`;
+      });
+
+      let conteo = {};
+
+      snapshot.forEach(doc=>{
+        const data = doc.data();
+
+        const div = document.createElement("div");
+        div.className = "slot reserved";
+        div.innerHTML = `${data.nombre}<br>${data.hora}`;
+
+        if(admin){
+          const btn = document.createElement("button");
+          btn.innerText = "Eliminar";
+          btn.onclick = ()=> db.collection("reservas").doc(doc.id).delete();
+          div.appendChild(btn);
+        }
+
+        document.getElementById(data.dia).appendChild(div);
+
+        conteo[data.nombre] = (conteo[data.nombre] || 0) + 1;
+      });
+
+      graficar(conteo);
+    });
+  }
+
+  function modoAdmin(){
+    const clave = document.getElementById("claveAdmin").value;
+    if(clave === "1234"){
+      admin = true;
+      alert("Modo administrador activado");
+      cargar();
+    }
+  }
+
+  let chart;
+
+  function graficar(data){
+    const ctx = document.getElementById('grafico');
+
+    if(chart) chart.destroy();
+
+    chart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: Object.keys(data),
+        datasets: [{
+          label: 'Reservas por docente',
+          data: Object.values(data)
+        }]
+      }
+    });
+  }
+
+  cargar();
+</script>
+</body>
+</html>
