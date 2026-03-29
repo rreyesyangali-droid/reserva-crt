@@ -22,12 +22,6 @@ body { font-family: Arial; background:#f4f4f4; }
 
 .header { text-align:center; font-weight:bold; padding:10px; }
 
-.lunes { background:#d4edda; }
-.martes { background:#fff3cd; }
-.miercoles { background:#e6d4f5; }
-.jueves { background:#d1ecf1; }
-.viernes { background:#f8d7da; }
-
 .hora { background:#eee; text-align:center; padding:8px; }
 
 .celda {
@@ -40,7 +34,18 @@ body { font-family: Arial; background:#f4f4f4; }
   font-weight:bold;
 }
 
-.ocupado { color:white; }
+.ocupado {
+  color:white;
+  cursor:not-allowed;
+}
+
+.seleccionada {
+  border:3px solid black;
+}
+
+#panelAdmin { display:none; }
+
+button { padding:10px; margin-top:10px; }
 </style>
 </head>
 
@@ -51,44 +56,27 @@ body { font-family: Arial; background:#f4f4f4; }
 
 <select id="docente">
 <option value="">Seleccione docente</option>
-<option>SEMINARIO HUERTA PILAR ELISA</option>
-<option>SUSY SARANGO</option>
-<option>MILAGROS DIOSES</option>
-<option>FLOR CAISAHUANA</option>
-<option>ESTHER MENA</option>
-<option>SANDRA CONTRERAS</option>
-<option>ROSALVINA PAUCAR</option>
-<option>ANA LAZARES</option>
-<option>ANA CARRASCO</option>
-<option>LISSET TASAYCO</option>
-<option>MARY RODRIGUEZ</option>
-<option>PAOLA MALDONADO</option>
-<option>JUANA PACHERRES</option>
-<option>KATHERIN CASTRO</option>
-<option>JAVIER TARMEÑO</option>
-<option>MARTHA QUISPE</option>
-<option>FELIX PAUCARCAJA</option>
-<option>OFELIA MALASQUEZ</option>
-<option>MILAGROS CAMPOS</option>
-<option>BETHY CABRERA</option>
-<option>FLORIZA CASTRO</option>
-<option>NICOLAS MENDOZA</option>
-<option>JOSE ALCANTARA</option>
-<option>ROGER CUEVA</option>
-<option>MARISOL BRAVO</option>
-<option>ROSAMEL JIMENEZ</option>
-<option>MARIA LIMACHE</option>
-<option>ELIZABETH CCAJMA</option>
 <option>ROCIO REYES</option>
+<option>MARIA LIMACHE</option>
+<option>ROSAMEL JIMENEZ</option>
+<option>MARISOL BRAVO</option>
+<option>ROGER CUEVA</option>
 </select>
+
+<br>
+<button onclick="confirmarReserva()">RESERVAR</button>
 
 <div class="grid" id="tabla"></div>
 
-<h3>🔐 Admin</h3>
+<h3>🔐 Acceso Administrador</h3>
 <input type="password" id="claveAdmin">
-<button onclick="modoAdmin()">Acceder</button>
+<button onclick="modoAdmin()">Ingresar</button>
 
+<!-- PANEL SOLO ADMIN -->
+<div id="panelAdmin">
+<h3>📊 Estadísticas</h3>
 <canvas id="grafico"></canvas>
+</div>
 
 </div>
 
@@ -102,6 +90,8 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
+let seleccion = {};
+let ocupadas = {};
 let admin=false;
 let chart;
 
@@ -140,66 +130,102 @@ function crearTabla(){
      const letras=["B","R","E","A","K"];
      tabla.innerHTML+=`<div class="celda">${letras[i]}</div>`;
    }else{
-     tabla.innerHTML+=`<div class="celda" onclick="seleccionar('${d}','${h}')"></div>`;
+     tabla.innerHTML+=`<div class="celda" onclick="seleccionar('${d}','${h}',this)"></div>`;
    }
   });
  });
 }
 
-let seleccion={};
+function seleccionar(dia,hora,elemento){
+ let key = dia+"-"+hora;
 
-function seleccionar(dia,hora){
+ if(ocupadas[key]){
+   alert("❌ Ya reservado");
+   return;
+ }
+
+ document.querySelectorAll(".celda").forEach(c=>c.classList.remove("seleccionada"));
+ elemento.classList.add("seleccionada");
+
+ seleccion={dia,hora};
+}
+
+function confirmarReserva(){
  let docente=document.getElementById("docente").value;
- if(!docente) return alert("Seleccione docente");
 
- db.collection("reservas").add({docente,dia,hora})
+ if(!docente) return alert("Seleccione docente");
+ if(!seleccion.dia) return alert("Seleccione un cuadro");
+
+ let key = seleccion.dia+"-"+seleccion.hora;
+
+ if(ocupadas[key]){
+   alert("❌ Ya ocupado");
+   return;
+ }
+
+ db.collection("reservas").add({
+   docente,
+   dia:seleccion.dia,
+   hora:seleccion.hora
+ })
  .then(doc=>{
-   generarQR(docente,dia,hora,doc.id);
+   generarBoleta(docente,seleccion.dia,seleccion.hora,doc.id);
  });
 }
 
-function generarQR(docente,dia,hora,id){
- let texto=`${docente} - ${dia} - ${hora}`;
+function generarBoleta(docente,dia,hora,id){
+ let texto=`${docente}\n${dia} - ${hora}\nID:${id}`;
+
  QRCode.toDataURL(texto,function(err,url){
-   let a=document.createElement("a");
-   a.href=url;
-   a.download="QR.png";
-   a.click();
+   let v=window.open("");
+   v.document.write(`<h2>BOLETA</h2><p>${docente}</p><p>${dia} ${hora}</p><img src='${url}'>`);
+   setTimeout(()=>v.print(),500);
  });
 }
 
 function cargar(){
  db.collection("reservas").onSnapshot(snap=>{
   crearTabla();
+  ocupadas={};
+
   let conteo={};
 
   snap.forEach(doc=>{
    let d=doc.data();
-   let celda=document.querySelector(`[onclick="seleccionar('${d.dia}','${d.hora}')"]`);
+   let key=d.dia+"-"+d.hora;
+   ocupadas[key]=true;
 
-   if(celda){
-    celda.style.background=colorUnico(doc.id);
-    celda.classList.add("ocupado");
-    celda.innerHTML=d.docente;
+   document.querySelectorAll(".celda").forEach(c=>{
+     if(c.getAttribute("onclick")===`seleccionar('${d.dia}','${d.hora}',this)`){
+       c.style.background=colorUnico(doc.id);
+       c.innerHTML=d.docente;
+       c.classList.add("ocupado");
 
-    if(admin){
-     let btn=document.createElement("button");
-     btn.textContent="X";
-     btn.onclick=()=>db.collection("reservas").doc(doc.id).delete();
-     celda.appendChild(btn);
-    }
-   }
+       // BOTÓN BORRAR SOLO ADMIN
+       if(admin){
+         let btn=document.createElement("button");
+         btn.textContent="X";
+         btn.onclick=()=>db.collection("reservas").doc(doc.id).delete();
+         c.appendChild(btn);
+       }
+     }
+   });
 
    conteo[d.docente]=(conteo[d.docente]||0)+1;
   });
 
-  graficar(conteo);
+  // SOLO ADMIN VE GRÁFICO
+  if(admin){
+    graficar(conteo);
+  }
  });
 }
 
 function modoAdmin(){
  if(document.getElementById("claveAdmin").value==="1234"){
   admin=true;
+  document.getElementById("panelAdmin").style.display="block";
+  alert("Modo administrador activado");
   cargar();
  }
 }
@@ -210,7 +236,10 @@ function graficar(data){
 
  chart=new Chart(ctx,{
   type:'bar',
-  data:{labels:Object.keys(data),datasets:[{data:Object.values(data)}]}
+  data:{
+    labels:Object.keys(data),
+    datasets:[{data:Object.values(data), label:"Reservas"}]
+  }
  });
 }
 
