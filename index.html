@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Horario de Reservas Docentes</title>
+<title>Reserva CRT</title>
 
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
@@ -12,7 +12,7 @@
 
 <style>
 body { font-family: Arial; background:#f4f4f4; }
-.container { max-width:1200px; margin:auto; background:#fff; padding:20px; border-radius:10px; }
+.container { max-width:1000px; margin:auto; background:#fff; padding:20px; border-radius:10px; }
 h1, h2 { text-align:center; }
 
 select, button { padding:10px; margin:5px; }
@@ -24,19 +24,11 @@ select, button { padding:10px; margin:5px; }
   margin-top:20px;
 }
 
-.header { text-align:center; padding:10px; font-weight:bold; }
-
-.lunes { background:#d4edda; }
-.martes { background:#fff3cd; }
-.miercoles { background:#e6d4f5; }
-.jueves { background:#d1ecf1; }
-.viernes { background:#f8d7da; }
-
 .hora { background:#eee; text-align:center; padding:8px; }
 
-.recreo { background:#ffeeba; font-weight:bold; }
+.recreo { background:#ffeeba; }
 
-.celda { min-height:55px; display:flex; justify-content:center; align-items:center; text-align:center; font-weight:bold; border-radius:5px; }
+.celda { min-height:50px; display:flex; justify-content:center; align-items:center; border-radius:5px; }
 
 .ocupado { color:white; }
 </style>
@@ -46,43 +38,16 @@ select, button { padding:10px; margin:5px; }
 <div class="container">
 
 <h1>🏫 I.E. N°0162 "SAN JOSÉ OBRERO"</h1>
-<h2>Reserva de Aula CRT</h2>
+<h2>Reserva CRT</h2>
 
-<!-- SELECT DOCENTES -->
 <select id="docente">
 <option value="">Seleccione docente</option>
-
-<option>MANUEL TASAYCO ATUNCAR</option>
-<option>SEMINARIO HUERTA PILAR ELISA</option>
-<option>SUSY MAGALY SARANGO PEREZ</option>
-<option>DIOSES GARAY MILAGROS MAGDALENA</option>
-<option>CAISAHUANA MAYTA FLOR DE MARIA</option>
-<option>MENA MENDOZA ESTHER PATRICIA</option>
-<option>SANDRA BEATRIZ CONTRERAS CHANHUALLA</option>
-<option>ROSALVINA BAETRIZ PAUCAR FLORES</option>
-<option>ANA ROSALBINA LAZARES PEREZ</option>
-<option>ANA CECILIA CARRASCO ARIAS</option>
-<option>TASAYCO LUYO LISSET KATHERINE</option>
-<option>RODRIGUEZ MOLINA MARY LUZ</option>
-<option>MALDONADO CUETO PAOLA VERONICA</option>
-<option>JUANA PACHERRES LEON</option>
-<option>CASTRO LLANTERHUAY KATHERIN ISABEL</option>
-<option>TARMEÑO PASCO JAVIER EDUARDO</option>
-<option>QUISPE CCUNO MARTHA</option>
-<option>PAUCARCAJA RICSE FELIX JUSTO</option>
-<option>MALASQUEZ CHUMPITAZI OFELIA</option>
-<option>CAMPOS MARTOS MILAGROS ISABEL</option>
-<option>CABRERA GUERRA BETHY</option>
-<option>CASTRO BARDALES FLORIZA</option>
-<option>MENDOZA PAREJA NICOLAS</option>
-<option>ALCANTARA SANDOVAL JOSE</option>
-<option>CUEVA CARDENAS ROGER</option>
-<option>BRAVO RAYMONDI MARISOL</option>
-<option>JIMENEZ BONIFACIO ROSAMEL</option>
-<option>LIMACHE CORTEZ MARIA ELENA</option>
-<option>CCAJMA QUISPE ELIZABETH</option>
 <option>REYES YANGALI ROCIO</option>
-
+<option>SEMINARIO HUERTA PILAR</option>
+<option>MENA MENDOZA ESTHER</option>
+<option>RODRIGUEZ MOLINA MARY</option>
+<option>CASTRO LLANTERHUAY KATHERIN</option>
+<option>CAMPOS MARTOS MILAGROS</option>
 </select>
 
 <select id="dia">
@@ -144,7 +109,7 @@ horas.forEach(h=>{
  }
 });
 
-// color automático
+// color
 function colorUnico(id){
  let hash=0;
  for(let i=0;i<id.length;i++){
@@ -153,13 +118,10 @@ function colorUnico(id){
  return `hsl(${hash%360},70%,65%)`;
 }
 
-// tabla
+// tabla SIN encabezados de días
 function crearTabla(){
  let tabla=document.getElementById("tabla");
  tabla.innerHTML="";
-
- tabla.innerHTML+="<div></div>";
- dias.forEach(d=>tabla.innerHTML+=`<div class='header'>${d}</div>`);
 
  horas.forEach(h=>{
    tabla.innerHTML+=`<div class='hora ${h.includes("RECREO")?"recreo":""}'>${h}</div>`;
@@ -178,9 +140,7 @@ function reservar(){
  if(!docente) return alert("Seleccione docente");
 
  db.collection("reservas").add({docente,dia,hora})
- .then(doc=>{
-   generarQR(docente,dia,hora,doc.id);
- });
+ .then(doc=> generarQR(docente,dia,hora,doc.id));
 }
 
 // QR
@@ -208,13 +168,6 @@ function cargar(){
        celda.style.background=colorUnico(doc.id);
        celda.classList.add("ocupado");
        celda.innerHTML=d.docente;
-
-       if(admin){
-         let btn=document.createElement("button");
-         btn.textContent="X";
-         btn.onclick=()=>db.collection("reservas").doc(doc.id).delete();
-         celda.appendChild(btn);
-       }
      }
 
      conteo[d.docente]=(conteo[d.docente]||0)+1;
