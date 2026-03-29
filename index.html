@@ -1,88 +1,95 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Horario de Reservas Docentes</title>
+<meta charset="UTF-8">
+<title>Horario de Reservas Docentes</title>
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
-  <!-- Librerías -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
-  <style>
-    body { font-family: Arial; background:#f4f4f4; }
-    .container { max-width:1200px; margin:auto; background:#fff; padding:20px; border-radius:10px; }
-    h1 { text-align:center; }
+<style>
+body { font-family: Arial; background:#f4f4f4; }
+.container { max-width:1200px; margin:auto; background:#fff; padding:20px; border-radius:10px; }
+h1, h2 { text-align:center; }
 
-    select, input, button { padding:10px; margin:5px; }
+input, select, button { padding:10px; margin:5px; }
 
-    .grid {
-      display:grid;
-      grid-template-columns: 120px repeat(5, 1fr);
-      gap:5px;
-      margin-top:20px;
-    }
+.grid {
+  display:grid;
+  grid-template-columns: 120px repeat(5, 1fr);
+  gap:5px;
+  margin-top:20px;
+}
 
-    .header { font-weight:bold; text-align:center; padding:10px; border-radius:5px; }
+.header { font-weight:bold; text-align:center; padding:10px; border-radius:5px; }
 
-    .lunes { background:#d4edda; }
-    .martes { background:#fff3cd; }
-    .miercoles { background:#e6d4f5; }
-    .jueves { background:#d1ecf1; }
-    .viernes { background:#f8d7da; }
+.lunes { background:#d4edda; }
+.martes { background:#fff3cd; }
+.miercoles { background:#e6d4f5; }
+.jueves { background:#d1ecf1; }
+.viernes { background:#f8d7da; }
 
-    .hora { background:#eee; text-align:center; padding:8px; border-radius:5px; }
+.hora { background:#eee; text-align:center; padding:8px; border-radius:5px; }
 
-    .celda {
-      min-height:50px;
-      padding:5px;
-      border-radius:5px;
-      cursor:pointer;
-      font-weight:bold;
-    }
+.recreo { background:#ffeeba !important; font-weight:bold; }
 
-    .celda.lunes { color:#2e7d32; }
-    .celda.martes { color:#856404; }
-    .celda.miercoles { color:#6a1b9a; }
-    .celda.jueves { color:#0c5460; }
-    .celda.viernes { color:#721c24; }
+.celda {
+  min-height:55px;
+  padding:5px;
+  border-radius:5px;
+  font-weight:bold;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+}
 
-    .ocupado {
-      background:#ff6b6b !important;
-      color:white !important;
-    }
-  </style>
+.celda.lunes { color:#2e7d32; }
+.celda.martes { color:#856404; }
+.celda.miercoles { color:#6a1b9a; }
+.celda.jueves { color:#0c5460; }
+.celda.viernes { color:#721c24; }
+
+.ocupado { color:white !important; }
+
+.nombre-docente { font-size:13px; }
+.hora-docente { font-size:11px; }
+</style>
 </head>
+
 <body>
 <div class="container">
-  <h1>🏫 I.E. N°0162 "SAN JOSÉ OBRERO"</h1>
-  <h2 style="text-align:center;">Horario Pedagógico de Reservas</h2>
 
-  <input type="text" id="nombre" placeholder="Nombre del docente">
+<h1>🏫 I.E. N°0162 "SAN JOSÉ OBRERO"</h1>
+<h2>Horario Pedagógico de Reservas</h2>
 
-  <select id="dia">
-    <option>Lunes</option>
-    <option>Martes</option>
-    <option>Miércoles</option>
-    <option>Jueves</option>
-    <option>Viernes</option>
-  </select>
+<input type="text" id="nombre" placeholder="Nombre del docente">
 
-  <select id="horaSelect"></select>
+<select id="dia">
+<option>Lunes</option>
+<option>Martes</option>
+<option>Miércoles</option>
+<option>Jueves</option>
+<option>Viernes</option>
+</select>
 
-  <button onclick="reservar()">Reservar</button>
+<select id="horaSelect"></select>
 
-  <div class="grid" id="tabla"></div>
+<button onclick="reservar()">Reservar</button>
 
-  <h3>🔐 Administrador</h3>
-  <input type="password" id="claveAdmin" placeholder="Clave">
-  <button onclick="modoAdmin()">Acceder</button>
+<div class="grid" id="tabla"></div>
 
-  <h3>📊 Estadísticas</h3>
-  <canvas id="grafico"></canvas>
+<h3>🔐 Administrador</h3>
+<input type="password" id="claveAdmin" placeholder="Clave">
+<button onclick="modoAdmin()">Acceder</button>
+
+<h3>📊 Estadísticas</h3>
+<canvas id="grafico"></canvas>
+
 </div>
 
 <script>
@@ -102,24 +109,31 @@ let admin = false;
 let chart;
 
 const horas = [
-  "07:45 - 08:30",
-  "08:30 - 09:15",
-  "09:15 - 10:00",
-  "RECREO 10:00 - 10:30",
-  "10:30 - 11:15",
-  "11:15 - 12:00",
-  "12:00 - 12:45"
+"07:45 - 08:30",
+"08:30 - 09:15",
+"09:15 - 10:00",
+"RECREO 10:00 - 10:30",
+"10:30 - 11:15",
+"11:15 - 12:00",
+"12:00 - 12:45"
 ];
 
 const dias = [
-  {nombre:"Lunes", clase:"lunes"},
-  {nombre:"Martes", clase:"martes"},
-  {nombre:"Miércoles", clase:"miercoles"},
-  {nombre:"Jueves", clase:"jueves"},
-  {nombre:"Viernes", clase:"viernes"}
+{nombre:"Lunes", clase:"lunes"},
+{nombre:"Martes", clase:"martes"},
+{nombre:"Miércoles", clase:"miercoles"},
+{nombre:"Jueves", clase:"jueves"},
+{nombre:"Viernes", clase:"viernes"}
 ];
 
-// llenar select horas
+function colorUnico(id){
+  let hash = 0;
+  for(let i=0;i<id.length;i++){
+    hash = id.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return `hsl(${hash % 360}, 70%, 65%)`;
+}
+
 const horaSelect = document.getElementById("horaSelect");
 horas.forEach(h => {
   if(!h.includes("RECREO")){
@@ -138,7 +152,7 @@ function crearTabla(){
   dias.forEach(d => tabla.innerHTML += `<div class='header ${d.clase}'>${d.nombre}</div>`);
 
   horas.forEach(h => {
-    tabla.innerHTML += `<div class='hora'>${h}</div>`;
+    tabla.innerHTML += `<div class='hora ${h.includes("RECREO") ? "recreo" : ""}'>${h}</div>`;
 
     dias.forEach(d => {
       const id = `${d.nombre}-${h}`;
@@ -181,14 +195,12 @@ function cargar(){
 
       if(celda){
         celda.classList.add("ocupado");
-        celda.innerHTML = d.nombre;
+        celda.style.background = colorUnico(doc.id);
 
-        if(admin){
-          const btn = document.createElement("button");
-          btn.textContent = "X";
-          btn.onclick = ()=> db.collection("reservas").doc(doc.id).delete();
-          celda.appendChild(btn);
-        }
+        celda.innerHTML = `
+          <div class='nombre-docente'>${d.nombre}</div>
+          <div class='hora-docente'>${d.hora}</div>
+        `;
       }
 
       conteo[d.nombre] = (conteo[d.nombre] || 0) + 1;
@@ -224,4 +236,3 @@ cargar();
 </script>
 </body>
 </html>
-
