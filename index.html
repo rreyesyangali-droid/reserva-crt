@@ -37,36 +37,22 @@
     .hora { background:#eee; text-align:center; padding:8px; border-radius:5px; }
 
     .celda {
-      min-height:55px;
+      min-height:50px;
       padding:5px;
       border-radius:5px;
       cursor:pointer;
       font-weight:bold;
-      display:flex;
-      flex-direction:column;
-      justify-content:center;
-      align-items:center;
-      text-align:center;
     }
 
-    /* Color base del texto por día */
     .celda.lunes { color:#2e7d32; }
     .celda.martes { color:#856404; }
     .celda.miercoles { color:#6a1b9a; }
     .celda.jueves { color:#0c5460; }
     .celda.viernes { color:#721c24; }
 
-    /* Estilo cuando está ocupado */
     .ocupado {
+      background:#ff6b6b !important;
       color:white !important;
-    }
-
-    .nombre-docente {
-      font-size:13px;
-    }
-
-    .hora-docente {
-      font-size:11px;
     }
   </style>
 </head>
@@ -133,16 +119,6 @@ const dias = [
   {nombre:"Viernes", clase:"viernes"}
 ];
 
-// generar color único por reserva
-function colorUnico(id){
-  let hash = 0;
-  for(let i=0;i<id.length;i++){
-    hash = id.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const h = hash % 360;
-  return `hsl(${h}, 70%, 65%)`; // colores pastel
-}
-
 // llenar select horas
 const horaSelect = document.getElementById("horaSelect");
 horas.forEach(h => {
@@ -160,37 +136,6 @@ function crearTabla(){
 
   tabla.innerHTML += "<div></div>";
   dias.forEach(d => tabla.innerHTML += `<div class='header ${d.clase}'>${d.nombre}</div>`);
-
-  horas.forEach(h => {
-    tabla.innerHTML += `<div class='hora'>${h}</div>`;
-
-    dias.forEach(d => {
-      const id = `${d.nombre}-${h}`;
-      tabla.innerHTML += `<div class='celda ${d.clase}' id='${id}'></div>`;
-    });
-  });
-}'>${d.nombre}</div>`);
-
-  horas.forEach(h => {
-    tabla.innerHTML += `<div class='hora'>${h}</div>`;
-
-    dias.forEach((d, index) => {
-      const id = `${d.nombre}-${h}`;
-
-      // RECREO → mostrar BREAK distribuido por columnas
-      if(h.includes("RECREO")){
-        const letras = ["B","R","E","A","K"];
-        tabla.innerHTML += `
-          <div class='celda ${d.clase}' 
-               style='display:flex;justify-content:center;align-items:center;font-size:20px;font-weight:bold;'>
-               ${letras[index]}
-          </div>`;
-      } else {
-        tabla.innerHTML += `<div class='celda ${d.clase}' id='${id}'></div>`;
-      }
-    });
-  });
-}'>${d.nombre}</div>`);
 
   horas.forEach(h => {
     tabla.innerHTML += `<div class='hora'>${h}</div>`;
@@ -236,12 +181,7 @@ function cargar(){
 
       if(celda){
         celda.classList.add("ocupado");
-        celda.style.background = colorUnico(doc.id);
-
-        celda.innerHTML = `
-          <div class='nombre-docente'>${d.nombre}</div>
-          <div class='hora-docente'>${d.hora}</div>
-        `;
+        celda.innerHTML = d.nombre;
 
         if(admin){
           const btn = document.createElement("button");
