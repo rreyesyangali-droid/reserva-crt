@@ -12,23 +12,33 @@
 
 <style>
 body { font-family: Arial; background:#f4f4f4; }
-.container { max-width:1000px; margin:auto; background:#fff; padding:20px; border-radius:10px; }
-h1, h2 { text-align:center; }
-
-select, button { padding:10px; margin:5px; }
+.container { max-width:1200px; margin:auto; background:#fff; padding:20px; border-radius:10px; }
 
 .grid {
   display:grid;
   grid-template-columns: 120px repeat(5, 1fr);
   gap:5px;
-  margin-top:20px;
 }
+
+.header { text-align:center; font-weight:bold; padding:10px; }
+
+.lunes { background:#d4edda; }
+.martes { background:#fff3cd; }
+.miercoles { background:#e6d4f5; }
+.jueves { background:#d1ecf1; }
+.viernes { background:#f8d7da; }
 
 .hora { background:#eee; text-align:center; padding:8px; }
 
-.recreo { background:#ffeeba; }
-
-.celda { min-height:50px; display:flex; justify-content:center; align-items:center; border-radius:5px; }
+.celda {
+  min-height:60px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  cursor:pointer;
+  border-radius:5px;
+  font-weight:bold;
+}
 
 .ocupado { color:white; }
 </style>
@@ -37,30 +47,40 @@ select, button { padding:10px; margin:5px; }
 <body>
 <div class="container">
 
-<h1>🏫 I.E. N°0162 "SAN JOSÉ OBRERO"</h1>
-<h2>Reserva CRT</h2>
+<h2>🏫 I.E. N°0162 SAN JOSÉ OBRERO</h2>
 
 <select id="docente">
 <option value="">Seleccione docente</option>
-<option>REYES YANGALI ROCIO</option>
-<option>SEMINARIO HUERTA PILAR</option>
-<option>MENA MENDOZA ESTHER</option>
-<option>RODRIGUEZ MOLINA MARY</option>
-<option>CASTRO LLANTERHUAY KATHERIN</option>
-<option>CAMPOS MARTOS MILAGROS</option>
+<option>SEMINARIO HUERTA PILAR ELISA</option>
+<option>SUSY SARANGO</option>
+<option>MILAGROS DIOSES</option>
+<option>FLOR CAISAHUANA</option>
+<option>ESTHER MENA</option>
+<option>SANDRA CONTRERAS</option>
+<option>ROSALVINA PAUCAR</option>
+<option>ANA LAZARES</option>
+<option>ANA CARRASCO</option>
+<option>LISSET TASAYCO</option>
+<option>MARY RODRIGUEZ</option>
+<option>PAOLA MALDONADO</option>
+<option>JUANA PACHERRES</option>
+<option>KATHERIN CASTRO</option>
+<option>JAVIER TARMEÑO</option>
+<option>MARTHA QUISPE</option>
+<option>FELIX PAUCARCAJA</option>
+<option>OFELIA MALASQUEZ</option>
+<option>MILAGROS CAMPOS</option>
+<option>BETHY CABRERA</option>
+<option>FLORIZA CASTRO</option>
+<option>NICOLAS MENDOZA</option>
+<option>JOSE ALCANTARA</option>
+<option>ROGER CUEVA</option>
+<option>MARISOL BRAVO</option>
+<option>ROSAMEL JIMENEZ</option>
+<option>MARIA LIMACHE</option>
+<option>ELIZABETH CCAJMA</option>
+<option>ROCIO REYES</option>
 </select>
-
-<select id="dia">
-<option>Lunes</option>
-<option>Martes</option>
-<option>Miércoles</option>
-<option>Jueves</option>
-<option>Viernes</option>
-</select>
-
-<select id="hora"></select>
-
-<button onclick="reservar()">Reservar</button>
 
 <div class="grid" id="tabla"></div>
 
@@ -68,7 +88,6 @@ select, button { padding:10px; margin:5px; }
 <input type="password" id="claveAdmin">
 <button onclick="modoAdmin()">Acceder</button>
 
-<h3>📊 Estadísticas</h3>
 <canvas id="grafico"></canvas>
 
 </div>
@@ -83,67 +102,62 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-let admin = false;
+let admin=false;
 let chart;
 
-const horas = [
+const horas=[
 "07:45 - 08:30",
 "08:30 - 09:15",
 "09:15 - 10:00",
-"RECREO 10:00 - 10:30",
+"RECREO",
 "10:30 - 11:15",
 "11:15 - 12:00",
 "12:00 - 12:45"
 ];
 
-const dias = ["Lunes","Martes","Miércoles","Jueves","Viernes"];
+const dias=["Lunes","Martes","Miércoles","Jueves","Viernes"];
 
-// llenar horas
-const horaSelect = document.getElementById("hora");
-horas.forEach(h=>{
- if(!h.includes("RECREO")){
-   let op=document.createElement("option");
-   op.value=h;
-   op.textContent=h;
-   horaSelect.appendChild(op);
- }
-});
-
-// color
 function colorUnico(id){
  let hash=0;
  for(let i=0;i<id.length;i++){
-   hash=id.charCodeAt(i)+((hash<<5)-hash);
+  hash=id.charCodeAt(i)+((hash<<5)-hash);
  }
  return `hsl(${hash%360},70%,65%)`;
 }
 
-// tabla SIN encabezados de días
 function crearTabla(){
  let tabla=document.getElementById("tabla");
  tabla.innerHTML="";
 
+ tabla.innerHTML+="<div></div>";
+ dias.forEach(d=>tabla.innerHTML+=`<div class="header">${d}</div>`);
+
  horas.forEach(h=>{
-   tabla.innerHTML+=`<div class='hora ${h.includes("RECREO")?"recreo":""}'>${h}</div>`;
-   dias.forEach(d=>{
-     tabla.innerHTML+=`<div class='celda' id='${d}-${h}'></div>`;
-   });
+  tabla.innerHTML+=`<div class="hora">${h}</div>`;
+
+  dias.forEach((d,i)=>{
+   if(h==="RECREO"){
+     const letras=["B","R","E","A","K"];
+     tabla.innerHTML+=`<div class="celda">${letras[i]}</div>`;
+   }else{
+     tabla.innerHTML+=`<div class="celda" onclick="seleccionar('${d}','${h}')"></div>`;
+   }
+  });
  });
 }
 
-// reservar
-function reservar(){
- let docente=document.getElementById("docente").value;
- let dia=document.getElementById("dia").value;
- let hora=document.getElementById("hora").value;
+let seleccion={};
 
+function seleccionar(dia,hora){
+ let docente=document.getElementById("docente").value;
  if(!docente) return alert("Seleccione docente");
 
  db.collection("reservas").add({docente,dia,hora})
- .then(doc=> generarQR(docente,dia,hora,doc.id));
+ .then(doc=>{
+   generarQR(docente,dia,hora,doc.id);
+ });
 }
 
-// QR
 function generarQR(docente,dia,hora,id){
  let texto=`${docente} - ${dia} - ${hora}`;
  QRCode.toDataURL(texto,function(err,url){
@@ -154,48 +168,49 @@ function generarQR(docente,dia,hora,id){
  });
 }
 
-// cargar
 function cargar(){
  db.collection("reservas").onSnapshot(snap=>{
-   crearTabla();
-   let conteo={};
+  crearTabla();
+  let conteo={};
 
-   snap.forEach(doc=>{
-     let d=doc.data();
-     let celda=document.getElementById(`${d.dia}-${d.hora}`);
+  snap.forEach(doc=>{
+   let d=doc.data();
+   let celda=document.querySelector(`[onclick="seleccionar('${d.dia}','${d.hora}')"]`);
 
-     if(celda){
-       celda.style.background=colorUnico(doc.id);
-       celda.classList.add("ocupado");
-       celda.innerHTML=d.docente;
-     }
+   if(celda){
+    celda.style.background=colorUnico(doc.id);
+    celda.classList.add("ocupado");
+    celda.innerHTML=d.docente;
 
-     conteo[d.docente]=(conteo[d.docente]||0)+1;
-   });
+    if(admin){
+     let btn=document.createElement("button");
+     btn.textContent="X";
+     btn.onclick=()=>db.collection("reservas").doc(doc.id).delete();
+     celda.appendChild(btn);
+    }
+   }
 
-   graficar(conteo);
+   conteo[d.docente]=(conteo[d.docente]||0)+1;
+  });
+
+  graficar(conteo);
  });
 }
 
-// admin
 function modoAdmin(){
  if(document.getElementById("claveAdmin").value==="1234"){
-   admin=true;
-   cargar();
+  admin=true;
+  cargar();
  }
 }
 
-// gráfico
 function graficar(data){
  let ctx=document.getElementById("grafico");
  if(chart) chart.destroy();
 
  chart=new Chart(ctx,{
-   type:'bar',
-   data:{
-     labels:Object.keys(data),
-     datasets:[{data:Object.values(data)}]
-   }
+  type:'bar',
+  data:{labels:Object.keys(data),datasets:[{data:Object.values(data)}]}
  });
 }
 
