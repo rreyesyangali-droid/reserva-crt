@@ -164,6 +164,27 @@ function crearTabla(){
   horas.forEach(h => {
     tabla.innerHTML += `<div class='hora'>${h}</div>`;
 
+    dias.forEach((d, index) => {
+      const id = `${d.nombre}-${h}`;
+
+      // RECREO → mostrar BREAK distribuido por columnas
+      if(h.includes("RECREO")){
+        const letras = ["B","R","E","A","K"];
+        tabla.innerHTML += `
+          <div class='celda ${d.clase}' 
+               style='display:flex;justify-content:center;align-items:center;font-size:20px;font-weight:bold;'>
+               ${letras[index]}
+          </div>`;
+      } else {
+        tabla.innerHTML += `<div class='celda ${d.clase}' id='${id}'></div>`;
+      }
+    });
+  });
+}'>${d.nombre}</div>`);
+
+  horas.forEach(h => {
+    tabla.innerHTML += `<div class='hora'>${h}</div>`;
+
     dias.forEach(d => {
       const id = `${d.nombre}-${h}`;
       tabla.innerHTML += `<div class='celda ${d.clase}' id='${id}'></div>`;
