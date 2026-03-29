@@ -164,6 +164,16 @@ function crearTabla(){
   horas.forEach(h => {
     tabla.innerHTML += `<div class='hora'>${h}</div>`;
 
+    dias.forEach(d => {
+      const id = `${d.nombre}-${h}`;
+      tabla.innerHTML += `<div class='celda ${d.clase}' id='${id}'></div>`;
+    });
+  });
+}'>${d.nombre}</div>`);
+
+  horas.forEach(h => {
+    tabla.innerHTML += `<div class='hora'>${h}</div>`;
+
     dias.forEach((d, index) => {
       const id = `${d.nombre}-${h}`;
 
@@ -274,3 +284,4 @@ cargar();
 </script>
 </body>
 </html>
+
