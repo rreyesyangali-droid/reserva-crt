@@ -12,8 +12,23 @@
 
 <style>
 body { font-family: Arial; background:#f4f4f4; }
-.container { max-width:1200px; margin:auto; background:#fff; padding:20px; border-radius:10px; }
 
+.container {
+  max-width:1200px;
+  margin:auto;
+  background:#fff;
+  padding:20px;
+  border-radius:10px;
+}
+
+/* LOGO */
+.logo {
+  display:block;
+  margin:auto;
+  width:120px;
+}
+
+/* TABLA */
 .grid {
   display:grid;
   grid-template-columns: 120px repeat(5, 1fr);
@@ -21,7 +36,6 @@ body { font-family: Arial; background:#f4f4f4; }
 }
 
 .header { text-align:center; font-weight:bold; padding:10px; }
-
 .hora { background:#eee; text-align:center; padding:8px; }
 
 .celda {
@@ -29,8 +43,8 @@ body { font-family: Arial; background:#f4f4f4; }
   display:flex;
   justify-content:center;
   align-items:center;
-  cursor:pointer;
   border-radius:5px;
+  cursor:pointer;
   font-weight:bold;
 }
 
@@ -43,14 +57,15 @@ body { font-family: Arial; background:#f4f4f4; }
   border:3px solid black;
 }
 
-#panelAdmin { display:none; }
-
 button { padding:10px; margin-top:10px; }
 </style>
 </head>
 
 <body>
 <div class="container">
+
+<!-- 🔥 LOGO YA INCLUIDO -->
+<img src="https://upload.wikimedia.org/wikipedia/commons/6/6e/School_icon.png" class="logo">
 
 <h2>🏫 I.E. N°0162 SAN JOSÉ OBRERO</h2>
 
@@ -95,12 +110,11 @@ button { padding:10px; margin-top:10px; }
 
 <div class="grid" id="tabla"></div>
 
-<h3>🔐 Acceso Administrador</h3>
+<h3>🔐 Administrador</h3>
 <input type="password" id="claveAdmin">
 <button onclick="modoAdmin()">Ingresar</button>
 
-<!-- PANEL SOLO ADMIN -->
-<div id="panelAdmin">
+<div id="panelAdmin" style="display:none;">
 <h3>📊 Estadísticas</h3>
 <canvas id="grafico"></canvas>
 </div>
@@ -157,22 +171,22 @@ function crearTabla(){
      const letras=["B","R","E","A","K"];
      tabla.innerHTML+=`<div class="celda">${letras[i]}</div>`;
    }else{
-     tabla.innerHTML+=`<div class="celda" onclick="seleccionar('${d}','${h}',this)"></div>`;
+     tabla.innerHTML+=`<div class="celda" id="${d}-${h}" onclick="seleccionar('${d}','${h}',this)"></div>`;
    }
   });
  });
 }
 
-function seleccionar(dia,hora,elemento){
- let key = dia+"-"+hora;
+function seleccionar(dia,hora,el){
+ let key=dia+"-"+hora;
 
  if(ocupadas[key]){
-   alert("❌ Ya reservado");
-   return;
+  alert("❌ Ya reservado");
+  return;
  }
 
  document.querySelectorAll(".celda").forEach(c=>c.classList.remove("seleccionada"));
- elemento.classList.add("seleccionada");
+ el.classList.add("seleccionada");
 
  seleccion={dia,hora};
 }
@@ -183,30 +197,30 @@ function confirmarReserva(){
  if(!docente) return alert("Seleccione docente");
  if(!seleccion.dia) return alert("Seleccione un cuadro");
 
- let key = seleccion.dia+"-"+seleccion.hora;
+ let key=seleccion.dia+"-"+seleccion.hora;
 
  if(ocupadas[key]){
-   alert("❌ Ya ocupado");
-   return;
+  alert("❌ Ya ocupado");
+  return;
  }
 
  db.collection("reservas").add({
-   docente,
-   dia:seleccion.dia,
-   hora:seleccion.hora
- })
- .then(doc=>{
-   generarBoleta(docente,seleccion.dia,seleccion.hora,doc.id);
+  docente,
+  dia:seleccion.dia,
+  hora:seleccion.hora
+ }).then(doc=>{
+  generarBoleta(docente,seleccion.dia,seleccion.hora,doc.id);
  });
 }
 
 function generarBoleta(docente,dia,hora,id){
- let texto=`${docente}\n${dia} - ${hora}\nID:${id}`;
+ let texto=`Docente: ${docente}\n${dia} - ${hora}\nID:${id}`;
 
  QRCode.toDataURL(texto,function(err,url){
-   let v=window.open("");
-   v.document.write(`<h2>BOLETA</h2><p>${docente}</p><p>${dia} ${hora}</p><img src='${url}'>`);
-   setTimeout(()=>v.print(),500);
+   let a=document.createElement("a");
+   a.href=url;
+   a.download="boleta_QR.png";
+   a.click();
  });
 }
 
@@ -222,29 +236,25 @@ function cargar(){
    let key=d.dia+"-"+d.hora;
    ocupadas[key]=true;
 
-   document.querySelectorAll(".celda").forEach(c=>{
-     if(c.getAttribute("onclick")===`seleccionar('${d.dia}','${d.hora}',this)`){
-       c.style.background=colorUnico(doc.id);
-       c.innerHTML=d.docente;
-       c.classList.add("ocupado");
+   let celda=document.getElementById(key);
 
-       // BOTÓN BORRAR SOLO ADMIN
-       if(admin){
-         let btn=document.createElement("button");
-         btn.textContent="X";
-         btn.onclick=()=>db.collection("reservas").doc(doc.id).delete();
-         c.appendChild(btn);
-       }
+   if(celda){
+     celda.style.background=colorUnico(doc.id);
+     celda.innerHTML=d.docente;
+     celda.classList.add("ocupado");
+
+     if(admin){
+       let btn=document.createElement("button");
+       btn.textContent="X";
+       btn.onclick=()=>db.collection("reservas").doc(doc.id).delete();
+       celda.appendChild(btn);
      }
-   });
+   }
 
    conteo[d.docente]=(conteo[d.docente]||0)+1;
   });
 
-  // SOLO ADMIN VE GRÁFICO
-  if(admin){
-    graficar(conteo);
-  }
+  if(admin) graficar(conteo);
  });
 }
 
