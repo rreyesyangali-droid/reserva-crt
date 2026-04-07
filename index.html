@@ -145,10 +145,14 @@ let ocupadas = {};
 let admin=false;
 let chart;
 
+// 🔥 CORREGIDO (SEMANA CONSISTENTE)
 function obtenerSemanaActual(){
   const hoy = new Date();
-  const inicio = new Date(hoy.setDate(hoy.getDate() - hoy.getDay()));
-  return inicio.toISOString().split('T')[0];
+  hoy.setHours(0,0,0,0);
+  const dia = hoy.getDay();
+  const diferencia = hoy.getDate() - dia + (dia === 0 ? -6 : 1);
+  const lunes = new Date(hoy.setDate(diferencia));
+  return lunes.toISOString().split('T')[0];
 }
 
 const horas=[
