@@ -22,14 +22,12 @@ body { font-family: Arial; background:#f4f4f4; }
   text-align:center;
 }
 
-/* LOGO */
 .logo {
   display:block;
   margin:auto;
   width:130px;
 }
 
-/* TITULOS */
 h2 { margin:10px 0 5px; }
 
 .subtitulo {
@@ -39,7 +37,6 @@ h2 { margin:10px 0 5px; }
   margin-bottom:15px;
 }
 
-/* TABLA */
 .grid {
   display:grid;
   grid-template-columns: 120px repeat(5, 1fr);
@@ -75,7 +72,6 @@ button { padding:10px; margin-top:10px; }
 <body>
 <div class="container">
 
-<!-- 🔥 TU LOGO REAL DESDE GITHUB -->
 <img src="https://raw.githubusercontent.com/rreyesyangali-droid/reserva-crt/main/logo.jpg" class="logo">
 
 <h2>🏫 I.E. N°0162 SAN JOSÉ OBRERO</h2>
@@ -95,7 +91,7 @@ button { padding:10px; margin-top:10px; }
 <option>CARRASCO ARIAS ANA CECILIA</option>
 <option>TASAYCO LUYO, LISSET KATHERINE</option>
 <option>RODRIGUEZ MOLINA MARY LUZ</option>
-<option>MALDONADO CUETO, PAOLA VERONI</option>CA
+<option>MALDONADO CUETO, PAOLA VERONI</option>
 <option>PACHERRES LEON JUANA</option>
 <option>CASTRO LLANTERHUAY KATHERIN ISABEL</option>
 <option>TARMEÑO PASCO JAVIER EDUARDO</option>
@@ -106,7 +102,7 @@ button { padding:10px; margin-top:10px; }
 <option>CABRERA GUERRA BETHY</option>
 <option>CASTRO BARDALES FLORIZA MARGOT</option>
 <option>MENDOZA PAREJA NICOLAS EPIFANIO</option>
-<option>ALCANTARA SANDOVAL JOSE GONZA</option>LO
+<option>ALCANTARA SANDOVAL JOSE GONZA</option>
 <option>CUEVA CARDENAS ROGER</option>
 <option>BRAVO RAYMONDI MARISOL</option>
 <option>JIMENEZ BONIFACIO, ROSAMEL TANIA</option>
@@ -129,6 +125,7 @@ button { padding:10px; margin-top:10px; }
 <div id="panelAdmin" style="display:none;">
 <h3>📊 Estadísticas</h3>
 <canvas id="grafico"></canvas>
+<button onclick="borrarSemana()">🗑 Borrar Semana</button>
 </div>
 
 </div>
@@ -147,6 +144,12 @@ let seleccion = {};
 let ocupadas = {};
 let admin=false;
 let chart;
+
+function obtenerSemanaActual(){
+  const hoy = new Date();
+  const inicio = new Date(hoy.setDate(hoy.getDate() - hoy.getDay()));
+  return inicio.toISOString().split('T')[0];
+}
 
 const horas=[
 "07:45 - 08:30",
@@ -219,7 +222,8 @@ function confirmarReserva(){
  db.collection("reservas").add({
   docente,
   dia:seleccion.dia,
-  hora:seleccion.hora
+  hora:seleccion.hora,
+  semana: obtenerSemanaActual()
  }).then(doc=>{
   generarBoleta(docente,seleccion.dia,seleccion.hora,doc.id);
  });
@@ -237,7 +241,9 @@ function generarBoleta(docente,dia,hora,id){
 }
 
 function cargar(){
- db.collection("reservas").onSnapshot(snap=>{
+ db.collection("reservas")
+ .where("semana","==", obtenerSemanaActual())
+ .onSnapshot(snap=>{
   crearTabla();
   ocupadas={};
 
@@ -277,6 +283,22 @@ function modoAdmin(){
   alert("Modo administrador activado");
   cargar();
  }
+}
+
+function borrarSemana(){
+ if(!admin) return;
+
+ if(!confirm("¿Eliminar TODAS las reservas de esta semana?")) return;
+
+ db.collection("reservas")
+ .where("semana","==", obtenerSemanaActual())
+ .get()
+ .then(snap=>{
+   snap.forEach(doc=>{
+     db.collection("reservas").doc(doc.id).delete();
+   });
+   alert("Semana reiniciada");
+ });
 }
 
 function graficar(data){
