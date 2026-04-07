@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reserva CRT - San José Obrero</title>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
+        .container { max-width: 1050px; margin: auto; background: #fff; padding: 24px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; }
+        .logo { display: block; margin: auto; width: 120px; margin-bottom: 10px; }
+        h2 { color: #1a73e8; margin-bottom: 5px; }
+        .subtitulo { font-size: 18px; color: #5f6368; margin-bottom: 20px; }
+
+        select, input { padding: 10px; margin: 5px; border-radius: 5px; border: 1px solid #ccc; font-size: 14px; }
+        button { padding: 10px 18px; margin: 5px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; font-size: 14px; }
+        .btn-primary { background: #1a73e8; color: white; }
+        .btn-primary:hover { background: #1557b0; }
+        .btn-danger { background: #e53935; color: white; }
+        .btn-danger:hover { background: #b71c1c; }
+        .btn-secondary { background: #5f6368; color: white; }
+        .btn-secondary:hover { background: #3c4043; }
+
+        .semana-info { background: #e8f0fe; padding: 8px 16px; border-radius: 8px; display: inline-block; margin-bottom: 16px; font-size: 14px; color: #1a73e8; font-weight: bold; }
+
+        .grid-wrapper { overflow-x: auto; margin-top: 20px; }
+        .grid { display: grid; grid-template-columns: 130px repeat(5, 1fr); gap: 6px; min-width: 700px; }
+        .header { background: #1a73e8; color: white; font-weight: bold; padding: 10px 6px; border-radius: 5px; font-size: 13px; }
+        .hora { background: #e8f0fe; padding: 8px; font-weight: bold; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 12px; text-align: center; line-height: 1.3; }
+        .celda { min-height: 72px; display: flex; flex-direction: column; justify-content: center; align-items: center; border: 1px dashed #ccc; border-radius: 5px; font-size: 11px; padding: 4px; word-break: break-word; text-align: center; }
+        .recreo { background: #fff3e0; font-weight: bold; color: #e65100; border: none; cursor: default; font-size: 12px; }
+        .ocupado { color: white; font-weight: bold; font-size: 10px; }
+        .btn-eliminar { background: rgba(0,0,0,0.25); border: none; color: white; font-size: 10px; margin-top: 4px; cursor: pointer; border-radius: 3px; padding: 2px 6px; }
+        .btn-eliminar:hover { background: rgba(0,0,0,0.45); }
+
+        #panelAdmin { margin-top: 30px; border-top: 2px solid #eee; padding-top: 20px; }
+        .admin-acciones { margin-bottom: 16px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+        canvas { max-width: 100%; height: 300px !important; }
+
+        #toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #323232; color: white; padding: 12px 24px; border-radius: 8px; font-size: 14px; display: none; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        #toast.show { display: block; animation: fadeInOut 3s forwards; }
+        @keyframes fadeInOut { 0%{opacity:0} 10%{opacity:1} 80%{opacity:1} 100%{opacity:0} }
+    </style>
+</head>
+
+<body>
+<div class="container">
+    <img src="https://raw.githubusercontent.com/rreyesyangali-droid/reserva-crt/main/logo.jpg" class="logo" alt="Logo" onerror="this.style.display='none'">
+    <h2>🏫 I.E. N°0162 SAN JOSÉ OBRERO</h2>
+    <div class="subtitulo">Sistema de Reserva de Aula CRT</div>
+
+    <div class="semana-info" id="semana-actual">📅 Cargando semana...</div>
+
+    <div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom:10px;">
+        <select id="docente" style="min-width:280px;">
+            <option value="">Seleccione docente...</option>
+            <option>DIRECTIVOS</option>
+            <option>SEMINARIO HUERTA PILAR ELISA</option>
+            <option>SARANGO PEREZ SUSY MAGALY</option>
+            <option>DIOSES GARAY MILAGROS MAGDALENA</option>
+            <option>CAISAHUANA MAYTA, FLOR DE MARIA</option>
+            <option>MENA MENDOZA ESTHER PATRICIA</option>
+            <option>CONTRERAS CHANHUALLA SANDRA BEATRIZ</option>
+            <option>PAUCAR FLORES ROSALVINA BAETRIZ</option>
+            <option>LAZARES PEREZ ANA ROSALBINA</option>
+            <option>CARRASCO ARIAS ANA CECILIA</option>
+            <option>TASAYCO LUYO, LISSET KATHERINE</option>
+            <option>RODRIGUEZ MOLINA MARY LUZ</option>
+            <option>MALDONADO CUETO, PAOLA VERONICA</option>
+            <option>PACHERRES LEON JUANA</option>
+            <option>CASTRO LLANTERHUAY KATHERIN ISABEL</option>
+            <option>TARMEÑO PASCO JAVIER EDUARDO</option>
+            <option>QUISPE CCUNO MARTHA</option>
+            <option>PAUCARCAJA RICSE FELIX JUSTO</option>
+            <option>MALASQUEZ CHUMPITAZI OFELIA LUSMELIDA</option>
+            <option>CAMPOS MARTOS MILAGROS ISABEL</option>
+            <option>CABRERA GUERRA BETHY</option>
+            <option>CASTRO BARDALES FLORIZA MARGOT</option>
+            <option>MENDOZA PAREJA NICOLAS EPIFANIO</option>
+            <option>ALCANTARA SANDOVAL JOSE GONZALO</option>
+            <option>CUEVA CARDENAS ROGER</option>
+            <option>BRAVO RAYMONDI MARISOL</option>
+            <option>JIMENEZ BONIFACIO, ROSAMEL TANIA</option>
+            <option>LIMACHE CORTEZ MARIA ELENA</option>
+            <option>CCAJMA QUISPE ELIZABETH</option>
+            <option>ZAMUDIO SOLORZANO DANIEL</option>
+            <option>PIÑAN ARIZA CARMEN</option>
+            <option>SOSA QUISPE EFRAIN ABEL</option>
+        </select>
+
+        <select id="diaSeleccionado" style="min-width:160px;">
+            <option value="">-- Elegir día --</option>
+            <option>Lunes</option>
+            <option>Martes</option>
+            <option>Miércoles</option>
+            <option>Jueves</option>
+            <option>Viernes</option>
+        </select>
+
+        <button class="btn-primary" onclick="confirmarReservaDia()">✅ RESERVAR DÍA COMPLETO</button>
+    </div>
+
+    <div class="grid-wrapper">
+        <div class="grid" id="tabla"></div>
+    </div>
+
+    <hr style="margin-top:40px; opacity: 0.2;">
+    <h3>🔐 Acceso Administrador</h3>
+    <input type="password" id="claveAdmin" placeholder="Contraseña" onkeydown="if(event.key==='Enter') modoAdmin()">
+    <button class="btn-secondary" onclick="modoAdmin()">Ingresar</button>
+
+    <div id="panelAdmin" style="display:none;">
+        <h3>📊 Panel de Administración</h3>
+        <div class="admin-acciones">
+            <button class="btn-danger" onclick="limpiarSemana()">🗑️ Limpiar reservas de esta semana</button>
+        </div>
+        <h4>Reservas por docente (semana actual)</h4>
+        <canvas id="grafico" role="img" aria-label="Gráfico de barras de reservas por docente"></canvas>
+    </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── FIREBASE ────────────────────────────────────────────────────────────────
+const firebaseConfig = {
+    apiKey: "AIzaSyAtUo0_SaYsJYhBSJ-CwW1GU1Y4Iemq92M",
+    authDomain: "reserva-crt.firebaseapp.com",
+    projectId: "reserva-crt",
+    databaseURL: "https://reserva-crt-default-rtdb.firebaseio.com"
+};
+
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ── ESTADO ───────────────────────────────────────────────────────────────────
+let ocupadas = {};
+let admin = false;
+let chart = null;
+let dbRef = null;
+
+const horas = [
+    "07:45 - 08:30",
+    "08:30 - 09:15",
+    "09:15 - 10:00",
+    "RECREO",
+    "10:30 - 11:15",
+    "11:15 - 12:00",
+    "12:00 - 12:45"
+];
+// Solo las horas reales (sin recreo)
+const horasReales = horas.filter(h => h !== "RECREO");
+const dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
+
+// ── SEMANA ────────────────────────────────────────────────────────────────────
+function obtenerSemanaId(fecha) {
+    const d = new Date(fecha);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    const lunes = new Date(d.setDate(diff));
+    return lunes.toISOString().split('T')[0];
+}
+
+function nombreSemana(id) {
+    const lunes = new Date(id + 'T00:00:00');
+    const viernes = new Date(lunes);
+    viernes.setDate(lunes.getDate() + 4);
+    const fmt = d => d.toLocaleDateString('es-PE', { day: '2-digit', month: 'short' });
+    return `Semana del ${fmt(lunes)} al ${fmt(viernes)}`;
+}
+
+const semanaActual = obtenerSemanaId(new Date());
+document.getElementById('semana-actual').textContent = '📅 ' + nombreSemana(semanaActual);
+
+// ── COLOR ─────────────────────────────────────────────────────────────────────
+function colorUnico(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    return `hsl(${Math.abs(hash) % 360}, 65%, 42%)`;
+}
+
+// ── TABLA ─────────────────────────────────────────────────────────────────────
+function idCelda(dia, hora) {
+    return 'c_' + btoa(unescape(encodeURIComponent(dia + '||' + hora))).replace(/[^a-zA-Z0-9]/g, '');
+}
+
+function crearTabla() {
+    const tabla = document.getElementById("tabla");
+    let html = "<div></div>";
+    dias.forEach(d => html += `<div class="header">${d}</div>`);
+
+    const breackLetras = ["B","R","E","A","K"];
+    horas.forEach((h) => {
+        html += `<div class="hora">${h === "RECREO" ? "10:00 - 10:30" : h}</div>`;
+        dias.forEach((d, di) => {
+            if (h === "RECREO") {
+                html += `<div class="celda recreo">${breackLetras[di]}</div>`;
+            } else {
+                const cid = idCelda(d, h);
+                html += `<div class="celda" id="${cid}" data-dia="${d}" data-hora="${h}"></div>`;
+            }
+        });
+    });
+    tabla.innerHTML = html;
+}
+
+// ── ACTUALIZAR CELDAS ─────────────────────────────────────────────────────────
+function actualizarCeldas(reservas) {
+    document.querySelectorAll('.celda:not(.recreo)').forEach(el => {
+        if (!el.dataset.dia) return;
+        el.style.background = '';
+        el.innerHTML = '';
+        el.classList.remove('ocupado');
+    });
+
+    ocupadas = {};
+    const conteo = {};
+
+    Object.entries(reservas || {}).forEach(([id, d]) => {
+        const key = d.dia + '||' + d.hora;
+        ocupadas[key] = true;
+        conteo[d.docente] = (conteo[d.docente] || 0) + 1;
+
+        const cid = idCelda(d.dia, d.hora);
+        const celda = document.getElementById(cid);
+        if (!celda) return;
+
+        celda.style.background = colorUnico(d.docente);
+        celda.classList.add('ocupado');
+
+        const partes = d.docente.split(' ');
+        const nombre = partes.length >= 2 ? partes[0] + ' ' + partes[1] : d.docente;
+        celda.innerHTML = `<span style="color:white;font-size:10px;line-height:1.3;">${nombre}</span>`;
+
+        if (admin) {
+            const btn = document.createElement("button");
+            btn.textContent = "✕ Eliminar";
+            btn.className = "btn-eliminar";
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                if (confirm(`¿Eliminar reserva de ${d.docente}?`)) {
+                    db.ref('reservas/' + semanaActual + '/' + id).remove()
+                        .then(() => toast("🗑️ Reserva eliminada"))
+                        .catch(err => toast("Error: " + err.message));
+                }
+            };
+            celda.appendChild(btn);
+        }
+    });
+
+    if (admin) graficar(conteo);
+}
+
+// ── LISTENER ──────────────────────────────────────────────────────────────────
+function iniciarListener() {
+    if (dbRef) dbRef.off();
+    crearTabla();
+    dbRef = db.ref('reservas/' + semanaActual);
+    dbRef.on('value', snap => {
+        actualizarCeldas(snap.val());
+    }, err => {
+        console.error("Error:", err);
+        toast("⚠️ Error al conectar con la base de datos");
+    });
+}
+
+// ── RESERVAR DÍA COMPLETO ─────────────────────────────────────────────────────
+function confirmarReservaDia() {
+    const docente = document.getElementById("docente").value;
+    const dia = document.getElementById("diaSeleccionado").value;
+
+    if (!docente) { toast("⚠️ Seleccione un docente"); return; }
+    if (!dia)     { toast("⚠️ Seleccione un día");     return; }
+
+    // Verificar si alguna hora del día ya está ocupada por OTRO docente
+    const horasOcupadas = horasReales.filter(h => ocupadas[dia + '||' + h]);
+    if (horasOcupadas.length > 0) {
+        toast(`❌ El día ${dia} ya tiene horas ocupadas por otro docente`);
+        return;
+    }
+
+    if (!confirm(`¿Reservar el día ${dia} completo para ${docente}?\n(6 horas: 07:45 - 12:45)`)) return;
+
+    // Guardar las 6 horas del día de una sola vez
+    const updates = {};
+    horasReales.forEach(hora => {
+        const nuevaKey = db.ref().push().key; // genera ID único
+        updates[nuevaKey] = {
+            docente,
+            dia,
+            hora,
+            semana: semanaActual,
+            timestamp: Date.now()
+        };
+    });
+
+    db.ref('reservas/' + semanaActual).update(updates)
+        .then(() => {
+            toast(`✅ Día ${dia} reservado completo para ${docente.split(' ')[0]}`);
+            generarBoleta(docente, dia, Object.keys(updates)[0]);
+            document.getElementById("docente").value = "";
+            document.getElementById("diaSeleccionado").value = "";
+        })
+        .catch(err => toast("❌ Error: " + err.message));
+}
+
+// ── BOLETA QR ─────────────────────────────────────────────────────────────────
+function generarBoleta(docente, dia, id) {
+    const horasTexto = horasReales.join(' | ');
+    const texto = `RESERVA CRT\nI.E. N°0162 SAN JOSÉ OBRERO\nDocente: ${docente}\nDía: ${dia}\nHorario: Día completo\n07:45 - 12:45\nSemana: ${semanaActual}\nID: ${id}`;
+
+    QRCode.toDataURL(texto, { width: 300, margin: 2 }, function(err, url) {
+        if (err) { console.error(err); return; }
+        const canvas = document.createElement('canvas');
+        canvas.width = 400;
+        canvas.height = 440;
+        const ctx = canvas.getContext('2d');
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, 400, 440);
+        ctx.fillStyle = '#1a73e8';
+        ctx.fillRect(0, 0, 400, 70);
+
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 16px Segoe UI';
+        ctx.textAlign = 'center';
+        ctx.fillText('I.E. N°0162 SAN JOSÉ OBRERO', 200, 30);
+        ctx.font = '13px Segoe UI';
+        ctx.fillText('Comprobante de Reserva - Aula CRT', 200, 52);
+
+        ctx.textAlign = 'left';
+        const lines = [
+            ['Docente:', docente],
+            ['Día:', dia],
+            ['Horario:', 'Día completo (07:45 - 12:45)'],
+            ['Semana:', semanaActual],
+            ['ID:', id.substring(0, 12) + '...']
+        ];
+        lines.forEach(([label, value], i) => {
+            ctx.font = 'bold 12px Segoe UI';
+            ctx.fillStyle = '#5f6368';
+            ctx.fillText(label, 30, 95 + i * 26);
+            ctx.font = '12px Segoe UI';
+            ctx.fillStyle = '#222';
+            ctx.fillText(value, 110, 95 + i * 26);
+        });
+
+        const qrImg = new Image();
+        qrImg.onload = () => {
+            ctx.drawImage(qrImg, 100, 230, 200, 200);
+            ctx.strokeStyle = '#eee';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(1, 1, 398, 438);
+
+            const link = document.createElement('a');
+            link.href = canvas.toDataURL('image/png');
+            link.download = `Reserva_${docente.split(' ')[0]}_${dia}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+        qrImg.src = url;
+    });
+}
+
+// ── ADMIN ─────────────────────────────────────────────────────────────────────
+function modoAdmin() {
+    const clave = document.getElementById("claveAdmin").value;
+    if (clave === "1234") {
+        admin = true;
+        document.getElementById("panelAdmin").style.display = "block";
+        document.getElementById("claveAdmin").value = "";
+        toast("🔓 Modo administrador activado");
+        iniciarListener();
+    } else {
+        toast("❌ Clave incorrecta");
+    }
+}
+
+function limpiarSemana() {
+    if (!confirm(`¿Eliminar TODAS las reservas de la semana ${semanaActual}? Esta acción no se puede deshacer.`)) return;
+    db.ref('reservas/' + semanaActual).remove()
+        .then(() => toast("🗑️ Todas las reservas de la semana eliminadas"))
+        .catch(err => toast("❌ Error: " + err.message));
+}
+
+function graficar(data) {
+    const ctx = document.getElementById("grafico").getContext('2d');
+    if (chart) chart.destroy();
+    const labels = Object.keys(data).map(n => {
+        const p = n.split(' ');
+        return p.length >= 2 ? p[0] + ' ' + p[1] : n;
+    });
+    chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label: 'N° de Reservas',
+                data: Object.values(data),
+                backgroundColor: '#1a73e8',
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                x: { ticks: { font: { size: 10 }, maxRotation: 45 } }
+            }
+        }
+    });
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+function toast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.className = 'show';
+    setTimeout(() => t.className = '', 3200);
+}
+
+// ── INICIO ────────────────────────────────────────────────────────────────────
+iniciarListener();
+</script>
+</body>
+</html>
