@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -55,6 +54,8 @@ h2 { margin:10px 0 5px; }
   border-radius:5px;
   cursor:pointer;
   font-weight:bold;
+  text-align:center;
+  padding:5px;
 }
 
 .ocupado {
@@ -84,38 +85,12 @@ button { padding:10px; margin-top:10px; }
 <option>SEMINARIO HUERTA PILAR ELISA</option>
 <option>SARANGO PEREZ SUSY MAGALY</option>
 <option>DIOSES GARAY MILAGROS MAGDALENA</option>
-<option>CAISAHUANA MAYTA, FLOR DE MARIA</option>
-<option>MENA MENDOZA ESTHER PATRICIA</option>
-<option>CONTRERAS CHANHUALLA SANDRA BEATRIZ</option>
-<option>PAUCAR FLORES ROSALVINA BAETRIZ</option>
-<option>LAZARES PEREZ ANA ROSALBINA</option>
-<option>CARRASCO ARIAS ANA CECILIA</option>
-<option>TASAYCO LUYO, LISSET KATHERINE</option>
-<option>RODRIGUEZ MOLINA MARY LUZ</option>
-<option>MALDONADO CUETO, PAOLA VERONI</option>
-<option>PACHERRES LEON JUANA</option>
-<option>CASTRO LLANTERHUAY KATHERIN ISABEL</option>
-<option>TARMEÑO PASCO JAVIER EDUARDO</option>
-<option>QUISPE CCUNO MARTHA</option>
-<option>PAUCARCAJA RICSE FELIX JUSTO</option>
-<option>MALASQUEZ CHUMPITAZI OFELIA LUSMELIDA</option>
-<option>CAMPOS MARTOS MILAGROS ISABEL</option>
-<option>CABRERA GUERRA BETHY</option>
-<option>CASTRO BARDALES FLORIZA MARGOT</option>
-<option>MENDOZA PAREJA NICOLAS EPIFANIO</option>
-<option>ALCANTARA SANDOVAL JOSE GONZA</option>
-<option>CUEVA CARDENAS ROGER</option>
-<option>BRAVO RAYMONDI MARISOL</option>
-<option>JIMENEZ BONIFACIO, ROSAMEL TANIA</option>
-<option>LIMACHE CORTEZ MARIA ELENA</option>
-<option>CCAJMA QUISPE ELIZABETH</option>
-<option>ZAMUDIO SOLORZANO DANIEL</option>
-<option>PIÑAN ARIZA CARMEN</option>
-<option>SOSA QUISPE EFRAIN ABEL</option>
 </select>
 
 <br>
-<button onclick="confirmarReserva()">RESERVAR</button>
+<button onclick="confirmarReserva()" style="background:#e74c3c; color:white; font-weight:bold;">
+RESERVAR
+</button>
 
 <div class="grid" id="tabla"></div>
 
@@ -126,7 +101,7 @@ button { padding:10px; margin-top:10px; }
 <div id="panelAdmin" style="display:none;">
 <h3>📊 Estadísticas</h3>
 <canvas id="grafico"></canvas>
-<button onclick="borrarSemana()">🗑 Borrar Semana</button>
+<button onclick="borrarTodo()">🗑 Borrar Todo</button>
 </div>
 
 </div>
@@ -146,16 +121,6 @@ let ocupadas = {};
 let admin=false;
 let chart;
 
-// 🔥 CORREGIDO (SEMANA CONSISTENTE)
-function obtenerSemanaActual(){
-  const hoy = new Date();
-  hoy.setHours(0,0,0,0);
-  const dia = hoy.getDay();
-  const diferencia = hoy.getDate() - dia + (dia === 0 ? -6 : 1);
-  const lunes = new Date(hoy.setDate(diferencia));
-  return lunes.toISOString().split('T')[0];
-}
-
 const horas=[
 "07:45 - 08:30",
 "08:30 - 09:15",
@@ -167,14 +132,6 @@ const horas=[
 ];
 
 const dias=["Lunes","Martes","Miércoles","Jueves","Viernes"];
-
-function colorUnico(id){
- let hash=0;
- for(let i=0;i<id.length;i++){
-  hash=id.charCodeAt(i)+((hash<<5)-hash);
- }
- return `hsl(${hash%360},70%,65%)`;
-}
 
 function crearTabla(){
  let tabla=document.getElementById("tabla");
@@ -227,27 +184,14 @@ function confirmarReserva(){
  db.collection("reservas").add({
   docente,
   dia:seleccion.dia,
-  hora:seleccion.hora,
-  semana: obtenerSemanaActual()
- }).then(doc=>{
-  generarBoleta(docente,seleccion.dia,seleccion.hora,doc.id);
- });
-}
-
-function generarBoleta(docente,dia,hora,id){
- let texto=`Docente: ${docente}\n${dia} - ${hora}\nID:${id}`;
-
- QRCode.toDataURL(texto,function(err,url){
-   let a=document.createElement("a");
-   a.href=url;
-   a.download="boleta_QR.png";
-   a.click();
+  hora:seleccion.hora
+ }).then(()=>{
+  alert("✅ Reserva guardada");
  });
 }
 
 function cargar(){
  db.collection("reservas")
- .where("semana","==", obtenerSemanaActual())
  .onSnapshot(snap=>{
   crearTabla();
   ocupadas={};
@@ -262,16 +206,9 @@ function cargar(){
    let celda=document.getElementById(key);
 
    if(celda){
-     celda.style.background=colorUnico(doc.id);
+     celda.style.background="#e74c3c";
      celda.innerHTML=d.docente;
      celda.classList.add("ocupado");
-
-     if(admin){
-       let btn=document.createElement("button");
-       btn.textContent="X";
-       btn.onclick=()=>db.collection("reservas").doc(doc.id).delete();
-       celda.appendChild(btn);
-     }
    }
 
    conteo[d.docente]=(conteo[d.docente]||0)+1;
@@ -286,23 +223,14 @@ function modoAdmin(){
   admin=true;
   document.getElementById("panelAdmin").style.display="block";
   alert("Modo administrador activado");
-  cargar();
  }
 }
 
-function borrarSemana(){
- if(!admin) return;
-
- if(!confirm("¿Eliminar TODAS las reservas de esta semana?")) return;
-
- db.collection("reservas")
- .where("semana","==", obtenerSemanaActual())
- .get()
- .then(snap=>{
+function borrarTodo(){
+ db.collection("reservas").get().then(snap=>{
    snap.forEach(doc=>{
      db.collection("reservas").doc(doc.id).delete();
    });
-   alert("Semana reiniciada");
  });
 }
 
